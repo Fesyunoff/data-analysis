@@ -7,7 +7,7 @@ import psycopg2
 def get_client(verbose=False):
     conn_info = {
         'port': '5432',
-        'host': '172.18.0.2',
+        'host': '127.0.0.1',
         'database': 'postgres',
         'password': 'pass',
         'user': 'user'}
@@ -25,7 +25,7 @@ def execute_query(query, conn, verbose=False):
     cur.close()
     conn.commit()
 
-class Analisis:
+class Storage:
 
     def __init__(self, schema, input_table, conn):
         self._schema_name = schema
