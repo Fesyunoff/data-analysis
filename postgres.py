@@ -21,11 +21,14 @@ def execute_query(query, conn, verbose=False):
         print(query)
     conn = get_client()
     cur = conn.cursor()
-    cur.execute(query)
+    try:
+        cur.execute(query)
+    except psycopg2.Error as e:
+       print(e.pgerror) 
     cur.close()
     conn.commit()
 
-class Storage:
+class Events:
 
     def __init__(self, schema, input_table, conn):
         self._schema_name = schema
@@ -75,5 +78,43 @@ class Storage:
         'table_name': self._table_name,
         'user_id': user,
         'ts': ts
+    }
+    
+
+class Historicity:
+
+    def __init__(self, schema, input_table, conn):
+        self._schema_name = schema
+        self._table_name = input_table
+        self._conn = conn
+        execute_query(self.create_table_SQL(), self._conn, True)
+
+    def create_table_SQL(self):
+        return """
+    CREATE SCHEMA IF NOT EXISTS %(schema_name)s;
+
+    CREATE TABLE IF NOT EXISTS %(schema_name)s.%(table_name)s(
+        record_id INTEGER NOT NULL,
+        value_date DATE NOT NULL,
+        value INTEGER NOT NULL,
+        CONSTRAINT record_date PRIMARY KEY(record_id, value_date)
+         );""" % {
+        'schema_name': self._schema_name,
+        'table_name': self._table_name,
+    }
+
+    def insert_value_SQL(self, insert_id, ts, value):
+        return """
+
+    INSERT INTO %(schema_name)s.%(table_name)s(
+    record_id, value_date, value)
+    VALUES (
+    %(insert_id)d, date(to_timestamp(%(ts)f)), %(value)d
+         );""" % {
+        'schema_name': self._schema_name,
+        'table_name': self._table_name,
+        'insert_id': insert_id,
+        'ts': ts,
+        'value': value
     }
     
